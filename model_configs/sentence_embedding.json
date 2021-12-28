@@ -1,0 +1,9 @@
+{
+  "model_name": "sentence_embeddding",
+  "seq_len": 100,
+  "pooled_output_size": 256,
+  "vocab_path": "../chinese_wwm_ext_L-12_H-768_A-12/v2/vocab.txt",
+  "bert_config_path": "../chinese_wwm_ext_L-12_H-768_A-12/v2/bert_config.json",
+  "bert_model_path": "../chinese_wwm_ext_L-12_H-768_A-12/v2/bert_model.ckpt-1",
+  "output_path": ""
+}
