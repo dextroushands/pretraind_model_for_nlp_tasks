@@ -13,7 +13,7 @@ from data_processor.text_match_data_generator import TextMatchDataGenerator
 from official.nlp.modeling.networks import BertEncoder
 from official.modeling import tf_utils
 from official.nlp.bert import configs as bert_configs
-from model.sim_bert import SimBert
+from models.sim_bert import SimBert
 
 
 
@@ -57,9 +57,9 @@ class ItrTask(TrainBase):
                 stddev=cfg.initializer_range),
             embedding_width=cfg.embedding_size,
             return_all_encoder_outputs=True)
-        ckpt = tf.train.Checkpoint(model=bert_encoder)
-        init_checkpoint = self.config['bert_model_path']
-        ckpt.restore(init_checkpoint).assert_existing_objects_matched()
+        # ckpt = tf.train.Checkpoint(model=bert_encoder)
+        # init_checkpoint = self.config['bert_model_path']
+        # ckpt.restore(init_checkpoint).assert_existing_objects_matched()
         # bert_encoder.load_weights(init_checkpoint)
         return bert_encoder
 
@@ -179,7 +179,7 @@ class ItrTask(TrainBase):
         检查是否存在模型文件
         :return:
         '''
-        # ckpt = tf.train.Checkpoint(model=model)
+        # ckpt = tf.train.Checkpoint(models=models)
         init_checkpoint = os.path.join(self.config['ckpt_model_path'], self.config['model_name'])
 
         # ckpt.restore(init_checkpoint).assert_existing_objects_matched()
@@ -193,7 +193,11 @@ if __name__=='__main__':
     Itr_pair = ItrTask(config)
 
     model = Itr_pair.build_model()
-    # config = model.get_config()
+    bert_encoder = Itr_pair.build_encoder()
+    ckpt = tf.train.Checkpoint(model=bert_encoder)
+    init_checkpoint = config['bert_model_path']
+    ckpt.restore(init_checkpoint).assert_existing_objects_matched()
+    # config = models.get_config()
     Itr_pair.train(model)
 
 

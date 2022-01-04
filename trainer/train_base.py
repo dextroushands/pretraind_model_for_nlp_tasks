@@ -1,6 +1,6 @@
 import tensorflow as tf
 
-from model.model_base import BaseModel
+from models.model_base import BaseModel
 
 
 class TrainBase(BaseModel):
@@ -46,7 +46,7 @@ class TrainBase(BaseModel):
                     mean_acc = sum_acc/count
             if mean_acc > best_acc:
                 best_acc = mean_acc
-                # print('save model')
+                # print('save models')
                 self.save_ckpt_model(model)
                 self.save_pb_model(model)
 

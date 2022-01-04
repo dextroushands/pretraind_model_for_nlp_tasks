@@ -39,13 +39,13 @@ class ClassifierTask(TrainBase):
 
         model = BertClassifier(network=encoder_network,
                                num_classes=self.config['num_classes'])
-        # ckpt = tf.train.Checkpoint(model=model)
+        # ckpt = tf.train.Checkpoint(models=models)
 
         # init_checkpoint = self.config['bert_model_path']
 
         # ckpt.restore(init_checkpoint).assert_existing_objects_matched()
 
-        # model.load_weights(init_checkpoint).assert_existing_objects_matched()
+        # models.load_weights(init_checkpoint).assert_existing_objects_matched()
         return model
 
     def build_encoder(self):
@@ -66,9 +66,9 @@ class ClassifierTask(TrainBase):
                 stddev=cfg.initializer_range),
             embedding_width=cfg.embedding_size,
             return_all_encoder_outputs=True)
-        ckpt = tf.train.Checkpoint(model=bert_encoder)
-        init_checkpoint = self.config['bert_model_path']
-        ckpt.restore(init_checkpoint).assert_existing_objects_matched()
+        # ckpt = tf.train.Checkpoint(model=bert_encoder)
+        # init_checkpoint = self.config['bert_model_path']
+        # ckpt.restore(init_checkpoint).assert_existing_objects_matched()
         # bert_encoder.load_weights(init_checkpoint)
         return bert_encoder
 
@@ -122,7 +122,7 @@ class ClassifierTask(TrainBase):
         检查是否存在模型文件
         :return:
         '''
-        # ckpt = tf.train.Checkpoint(model=model)
+        # ckpt = tf.train.Checkpoint(models=models)
         init_checkpoint = os.path.join(self.config['ckpt_model_path'], self.config['model_name'])
 
         # ckpt.restore(init_checkpoint).assert_existing_objects_matched()
@@ -136,7 +136,11 @@ if __name__=='__main__':
     classifier = ClassifierTask(config)
 
     model = classifier.build_model()
-    # config = model.get_config()
+    bert_encoder = classifier.build_encoder()
+    ckpt = tf.train.Checkpoint(model=bert_encoder)
+    init_checkpoint = config['bert_model_path']
+    ckpt.restore(init_checkpoint).assert_existing_objects_matched()
+    # config = models.get_config()
     classifier.train(model)
 
 

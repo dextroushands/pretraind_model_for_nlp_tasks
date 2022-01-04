@@ -13,7 +13,7 @@
   "bert_config_path": "../chinese_wwm_ext_L-12_H-768_A-12/v2/bert_config.json",
   "bert_model_path": "../chinese_wwm_ext_L-12_H-768_A-12/v2/bert_model.ckpt-1",
   "output_path": "../output_path/sim",
-  "ckpt_model_path": "output_path/ckpt_model",
+  "ckpt_model_path": "output_path/ckpt_model/simbert",
   "export_model_path": "output_path/export_model",
   "data_path": "/Users/donruo/Desktop/project/text_match/data/train.csv",
   "test_data": "/Users/donruo/Desktop/project/search_algorithm/query_understand/short_text_classify/data/news/test.tsv"

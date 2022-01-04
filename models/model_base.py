@@ -53,7 +53,7 @@ class BaseModel(tf.Module, metaclass=abc.ABCMeta):
                       train_step: Optional[Callable[..., Any]] = None,
                       validation_step: Optional[Callable[..., Any]] = None,
                       **kwargs) -> tf.keras.Model:
-        """Compiles the model with objects created by the task.
+        """Compiles the models with objects created by the task.
 
         The method should not be used in any customized training implementation.
 
@@ -183,12 +183,14 @@ class BaseModel(tf.Module, metaclass=abc.ABCMeta):
         '''
         模型预测结果
         :param input:
-        :param model:
+        :param models:
         :return:
         '''
 
         predictions = tf.keras.layers.Activation(
             tf.nn.log_softmax, dtype=tf.float32)(logits).numpy()
+        predictions = tf.argmax(predictions, axis=-1, name='predictions')
+
         return predictions
 
     def save_ckpt_model(self, model:tf.keras.Model):
@@ -203,8 +205,8 @@ class BaseModel(tf.Module, metaclass=abc.ABCMeta):
             os.makedirs(save_path)
         model_save_path = os.path.join(save_path, self.config["model_name"])
 
-        # checkpoint = tf.train.Checkpoint(model)
-        # checkpoint.save(model_save_path + '/model.ckpt')
+        # checkpoint = tf.train.Checkpoint(models)
+        # checkpoint.save(model_save_path + '/models.ckpt')
         model.save_weights(model_save_path)
 
     def save_pb_model(self, model:tf.keras.Model, checkpoint_dir=None, restore_model_using_load_weights=True):
@@ -221,7 +223,7 @@ class BaseModel(tf.Module, metaclass=abc.ABCMeta):
 
         if checkpoint_dir:
             # Keras compile/fit() was used to save checkpoint using
-            # model.save_weights().
+            # models.save_weights().
             if restore_model_using_load_weights:
                 model_weight_path = os.path.join(checkpoint_dir, 'checkpoint')
                 assert tf.io.gfile.exists(model_weight_path)
@@ -231,7 +233,7 @@ class BaseModel(tf.Module, metaclass=abc.ABCMeta):
             else:
                 checkpoint = tf.train.Checkpoint(model=model)
 
-                # Restores the model from latest checkpoint.
+                # Restores the models from latest checkpoint.
                 latest_checkpoint_file = tf.train.latest_checkpoint(checkpoint_dir)
                 assert latest_checkpoint_file
 
@@ -246,7 +248,7 @@ class BaseModel(tf.Module, metaclass=abc.ABCMeta):
         :param model_path:
         :return:
         '''
-        # model = self.create_model()
+        # models = self.create_model()
         path = os.path.join(path, model_name)
         model.load_weights(path)
         return model

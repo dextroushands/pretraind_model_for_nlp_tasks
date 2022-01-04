@@ -3,7 +3,7 @@ import os
 import pickle
 import json
 from data_processor.tokenizer import tokenizer
-from keras_models.model_base import BaseModel
+from models.model_base import BaseModel
 
 
 class BasePredictor(BaseModel):
@@ -20,9 +20,14 @@ class BasePredictor(BaseModel):
         :param model_path:
         :return:
         '''
-        # model = self.create_model()
-        path = os.path.join(path, model_name)
+        # models = self.create_model()
+        path = '../'+os.path.join(path, model_name)
         model.load_weights(path)
+        # ckpt = tf.train.Checkpoint(model=model)
+        # init_checkpoint = path
+        #
+        # ckpt.restore(init_checkpoint).assert_existing_objects_matched()
+
         return model
 
     def create_model(self):

@@ -20,7 +20,7 @@ from official.core import config_definitions as cfg
 from official.core import task_factory
 from typing import List, Optional, Tuple
 
-from model.sentence_embedding import SentenceEmbedding
+from models.sentence_embedding import SentenceEmbedding
 
 @dataclasses.dataclass
 class ModelConfig(base_config.Config):
@@ -32,7 +32,7 @@ class ModelConfig(base_config.Config):
 
 @dataclasses.dataclass
 class embeddingConfig(cfg.TaskConfig):
-  """The model config."""
+  """The models config."""
   # At most one of `init_checkpoint` and `hub_module_url` can be specified.
   init_checkpoint: str = ''
   hub_module_url: str = ''
