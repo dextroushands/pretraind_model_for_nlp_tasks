@@ -174,6 +174,59 @@ class tokenizer(data_base):
         segment_ids = [0] * len(word_ids)
         return word_ids, segment_ids, word_mask, sequence_length
 
+    def encode_v2(self, text_1, text_2):
+        '''
+        交互式文本匹配编码
+        '''
+        _tokenizer = tokenization.FullTokenizer(self.config['vocab_path'], do_lower_case=True)
+        if isinstance(text_1, str):
+            split_tokens_1 = _tokenizer.tokenize(text_1)
+        else:
+            split_tokens_1 = text_1
+        if isinstance(text_2, str):
+            split_tokens_2 = _tokenizer.tokenize(text_2)
+        else:
+            split_tokens_2 = text_1
+
+        if len(split_tokens_1) + len(split_tokens_2) > self.config['seq_len']:
+            split_tokens_2 = split_tokens_2[:self.config['seq_len'] - len(split_tokens_1)]
+            sequence_length = self.config['seq_len']
+        else:
+            sequence_length = len(split_tokens_1) + len(split_tokens_2)
+            while (len(split_tokens_1) + len(split_tokens_2) < self.config['seq_len']):
+                split_tokens_2.append("[PAD]")
+
+        tokens = []
+        segment_ids = []
+        tokens.append("[CLS]")
+        segment_ids.append(0)
+        for i in split_tokens_1:
+            if i not in _tokenizer.vocab:
+                tokens.append("[UNK]")
+                print(i)
+                continue
+            tokens.append(i)
+            segment_ids.append(0)
+        tokens.append("[SEP]")
+        segment_ids.append(0)
+        for i in split_tokens_2:
+            if i not in _tokenizer.vocab:
+                tokens.append("[UNK]")
+                print(i)
+                continue
+            tokens.append(i)
+            segment_ids.append(1)
+        tokens.append("[SEP]")
+        segment_ids.append(1)
+        word_ids = _tokenizer.convert_tokens_to_ids(tokens)
+        word_mask = []
+        for i in word_ids:
+            if i == "[PAD]":
+                word_mask.append(0)
+            else:
+                word_mask.append(1)
+        return word_ids, segment_ids, word_mask, sequence_length
+
     def save_input_tokens(self, texts, labels, label_to_index):
         '''
         保存处理完成的输入tokens，方便后续加载

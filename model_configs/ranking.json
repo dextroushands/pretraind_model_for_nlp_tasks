@@ -1,0 +1,21 @@
+{
+  "model_name": "ranking",
+  "learning_rate": 1e-5,
+  "epoches": 10,
+  "batch_size": 1,
+  "optimizer": "adam",
+  "multi_label": 0,
+  "num_classes": 2,
+  "embedding_size": 300,
+  "seq_len": 128,
+  "dropout_rate": 0.2,
+  "num_samples": 7,
+  "vocab_path": "../chinese_wwm_ext_L-12_H-768_A-12/v2/vocab.txt",
+  "bert_config_path": "../chinese_wwm_ext_L-12_H-768_A-12/v2/bert_config.json",
+  "bert_model_path": "../chinese_wwm_ext_L-12_H-768_A-12/v2/bert_model.ckpt-1",
+  "output_path": "../output_path/ranking",
+  "ckpt_model_path": "output_path/ckpt_model/ranking",
+  "export_model_path": "output_path/export_model",
+  "data_path": "/Users/donruo/Desktop/project/QA/data/标准FAQ.xlsx",
+  "test_data": "/Users/donruo/Desktop/project/search_algorithm/query_understand/short_text_classify/data/news/test.tsv"
+}
