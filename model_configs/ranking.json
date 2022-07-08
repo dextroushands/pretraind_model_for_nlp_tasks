@@ -2,7 +2,7 @@
   "model_name": "ranking",
   "learning_rate": 1e-5,
   "epoches": 10,
-  "batch_size": 1,
+  "batch_size": 2,
   "optimizer": "adam",
   "multi_label": 0,
   "num_classes": 2,

@@ -23,5 +23,7 @@ class Ranking(tf.keras.Model):
             name='sentence_prediction')
         _logits = classifier(_output[1]) #[batch_size*samples_num, 1]
         logits = tf.split(_logits, num_or_size_splits=self.config['batch_size'], axis=0)
-        outputs = dict(logits=logits)
+        _relations = tf.keras.layers.Activation(tf.nn.sigmoid)(logits)
+        predictions = tf.reshape(tf.argmax(_relations), [-1])
+        outputs = dict(logits=logits, predictions=predictions)
         super(Ranking, self).__init__(inputs=input, outputs=outputs, **kwargs)

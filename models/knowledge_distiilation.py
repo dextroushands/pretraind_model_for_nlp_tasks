@@ -35,12 +35,7 @@ class Distill_model(tf.keras.Model):
 
         #teacher_softlabel
         teacher_output = teacher_network(teacher_input)
-        # teacher_classifier = layers.ClassificationHead(
-        #   inner_dim=teacher_output.shape[-1],
-        #   num_classes=self.config['num_classes'],
-        #   dropout_rate=self.config['dropout_rate'],
-        #   name='sentence_prediction')
-        # teacher_logits = teacher_classifier(teacher_output)
+
         teacher_soft_label = softmax_t(self.config['t'], teacher_output['logits'])
 
         # embedding层
@@ -72,13 +67,7 @@ class Distill_model(tf.keras.Model):
 
                 return config
 
-        # class shared_net(tf.keras.Model):
-        #     def __init__(self, config, vocab_size, word_vectors):
-        #         query = tf.keras.layers.Input(shape=(None,), dtype=tf.int64, name='input_x_ids')
-        #         query_embedding = GatherLayer(config, vocab_size, word_vectors)(query)
-        #         query_embedding_output = shared_lstm_layer(config)(query_embedding)
-        #
-        #         super(shared_net, self).__init__(inputs=[query], outputs=query_embedding_output)
+
         shared_net = tf.keras.Sequential([GatherLayer(config, vocab_size, word_vectors),
                                           shared_lstm_layer(config)])
 

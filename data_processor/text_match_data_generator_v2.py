@@ -82,6 +82,7 @@ class TextMatchDataGeneratorV2(embedding):
             segment_ids_list.append(segment_ids)
             word_mask_list.append(word_mask)
             sequence_length_list.append(sequence_length)
+            word_ids, segment_ids, word_mask, sequence_length = [], [], [], []
 
 
             # label_id = self.labels_to_ids([labels[i]], label_to_index)

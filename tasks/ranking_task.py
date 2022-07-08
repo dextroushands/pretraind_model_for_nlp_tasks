@@ -14,6 +14,7 @@ from official.nlp.modeling.networks import BertEncoder
 from official.modeling import tf_utils
 from official.nlp.bert import configs as bert_configs
 from models.ranking import Ranking
+import numpy as np
 
 
 
@@ -63,27 +64,76 @@ class RankingTask(TrainBase):
         # bert_encoder.load_weights(init_checkpoint)
         return bert_encoder
 
+    def lambda_rank_loss(self, scores, labels):
+        '''
+        lambda rank损失
+        '''
+        #delta_lambda计算
+        rank = tf.range(1., tf.cast(self.config['num_samples'], dtype=tf.float32) + 1)
+        rank = tf.tile(rank, [self.config['batch_size']])
+        rank = tf.reshape(rank, tf.shape(labels))
+        rel = 2 ** labels - 1
+        sorted_label = tf.sort(labels, direction='DESCENDING')
+        sorted_rel = 2 ** sorted_label - 1
+        cg_discount = tf.math.log(1. + rank)
+        dcg_m = rel / cg_discount
+        dcg = tf.reduce_sum(dcg_m)
+        stale_ij = dcg_m
+        new_ij = rel / tf.transpose(cg_discount, perm=[0, 2, 1])
+        stale_ji = tf.transpose(stale_ij, perm=[0, 2, 1])
+        new_ji = tf.transpose(new_ij, perm=[0, 2, 1])
+        #new dcg
+        dcg_new = dcg - stale_ij + new_ij - stale_ji + new_ji
+        #delta dcg
+        dcg_max = tf.reduce_sum(sorted_rel / cg_discount)
+        ndcg_delta = tf.abs(dcg_new - dcg) / dcg_max
+
+        #
+        s_i_minus_s_j = scores - tf.transpose(scores, perm=[0, 2, 1])
+        #上三角矩阵
+        mask1 = tf.linalg.band_part(ndcg_delta, 0, -1)
+        #下三角矩阵
+        mask2 = tf.linalg.band_part(s_i_minus_s_j, -1, 0)
+        _loss = mask1 * tf.transpose(mask2, perm=[0, 2, 1])
+        loss = tf.reduce_sum(_loss)
+        return loss
+
+
     def build_losses(self, labels, model_outputs, metrics, aux_losses=None) -> tf.Tensor:
         '''
         构建NDCG损失
         '''
-        with tf.name_scope('TextMatchTask/losses'):
-            # 构建ndcg损失
-            y = tf.reshape(labels, (-1,))
-            similarity = model_outputs['logits']
-            rank = [i for i in range(1, self.config['num_samples']+1)]
-            _dcg = [(tf.pow(2,r)-1) / (tf.math.log(rank+1)/tf.math.log(2)) for r in similarity]
-            _sort_similarity = [sorted(item, reverse=True) for item in _dcg]
-            _idcg = [(tf.pow(2,r)-1) / (tf.math.log(rank+1)/tf.math.log(2)) for r in _sort_similarity]
+        def _ndcg(rank, relations):
+            _dcg = [(np.power(2, relations[i]) - 1) / np.log2(rank[i] + 1) for i in range(len(relations))]
+            _sort_similarity = sorted(relations, reverse=True)
+            _idcg = [(np.power(2, _sort_similarity[i]) - 1) / np.log2(rank[i] + 1) for i in range(len(_sort_similarity))]
             _ndcg = tf.reduce_sum(_dcg) / tf.reduce_sum(_idcg)
+            return _ndcg
 
 
+
+        with tf.name_scope('TextMatchTask/lambdas'):
+            # 构建ndcg损失
+            tf.transpose(labels)
+            y = tf.reshape(labels, [self.config['batch_size'], 1, self.config['num_samples']])
+            similarity = model_outputs['logits']
+
+            _relations = tf.keras.layers.Activation(tf.nn.sigmoid)(similarity)
+            relations = tf.reshape(_relations[:, :, 1], tf.shape(y))
+            # rank = [i for i in range(1, self.config['num_samples']+1)]
+            # _dcg = [(np.power(2,relations[i])-1) / np.log2(rank[i]+1) for i in range(len(relations))]
+            # _sort_similarity = [sorted(item, reverse=True) for item in _dcg]
+            # _idcg = [(tf.pow(2,r)-1) / (tf.math.log(rank+1)/tf.math.log(2)) for r in _sort_similarity]
+            # _ndcg = tf.reduce_sum(_dcg) / tf.reduce_sum(_idcg)
+            # ndcg = [_ndcg(rank, relations[i]) for i in range(len(relations))]
+
+            # y = [_ndcg(rank, y[i]) for i in range(len(y))]
             metrics = dict([(metric.name, metric) for metric in metrics])
-            losses = tf.keras.losses.sparse_categorical_crossentropy(labels,
-                                                                     tf.cast(_ndcg, tf.float32),
-                                                                     from_logits=True)
+            # losses = tf.keras.losses.sparse_categorical_crossentropy(y,
+            #                                                          tf.cast(ndcg, tf.float32),
+            #                                                          from_logits=True)
 
-            loss = tf.reduce_mean(losses)
+            loss = self.lambda_rank_loss(relations, y)
 
             return loss
 
@@ -124,10 +174,10 @@ class RankingTask(TrainBase):
         labels = inputs['labels']
         logs = {self.loss: loss}
         if metrics:
-            self.process_metrics(metrics, labels, outputs['predictions'])
+            self.process_metrics(metrics, tf.reshape(labels, (-1,1)), tf.reshape(outputs['predictions'], (-1,1)))
             logs.update({m.name: m.result() for m in model.metrics})
         if model.compiled_metrics:
-            self.process_compiled_metrics(model.compiled_metrics, labels, outputs['predictions'])
+            self.process_compiled_metrics(model.compiled_metrics, tf.reshape(labels, (-1,1)), tf.reshape(outputs['predictions'], (-1,1)))
             logs.update({m.name: m.result() for m in metrics or []})
             logs.update({m.name: m.result() for m in model.metrics})
         return logs
@@ -145,9 +195,9 @@ class RankingTask(TrainBase):
 
         logs = {self.loss: loss}
         if metrics:
-            self.process_metrics(metrics, labels, outputs['predictions'])
+            self.process_metrics(metrics, tf.reshape(labels, (-1,1)), tf.reshape(outputs['predictions'], (-1,1)))
         if model.compiled_metrics:
-            self.process_compiled_metrics(model.compiled_metrics, labels, outputs['predictions'])
+            self.process_compiled_metrics(model.compiled_metrics, tf.reshape(labels, (-1,1)), tf.reshape(outputs['predictions'], (-1,1)))
             logs.update({m.name: m.result() for m in metrics or []})
             logs.update({m.name: m.result() for m in model.metrics})
         return logs
