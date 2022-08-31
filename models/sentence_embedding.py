@@ -8,14 +8,15 @@ class SentenceEmbedding(tf.keras.Model):
     '''
     def __init__(self,
                  encoder_network: tf.keras.Model,
-                 sequence_length,
+                 # sequence_length,
                  config = None,
                  **kwargs):
         # self.encoder_network = encoder_network
         self.config = config
-        self.sequence_length = sequence_length
+        # self.sequence_length = sequence_length
 
-
+        # sequence_length = tf.keras.Input(shape=(None,), dtype=tf.int32, name='seqence_length')
+        sequence_length = self.config['seq_len']
         inputs = encoder_network.inputs
         outputs = encoder_network(inputs)
         if isinstance(outputs, list):
@@ -28,18 +29,18 @@ class SentenceEmbedding(tf.keras.Model):
             encoder_outputs = outputs['encoder_outputs']
 
         #取第一层和最后一层的均值作为句子embedding
-        if isinstance(sequence_length, int):
-            first_layer_outputs = encoder_outputs[0][:, :self.sequence_length, :]
-            last_layer_outputs = encoder_outputs[-1][:, :self.sequence_length, :]
-            average = (first_layer_outputs + last_layer_outputs) / 2.0
-            sentence_embedding = tf.reduce_mean(average, axis=1)
-        else:
-            sentence_embedding = []
-            for seq_len in sequence_length:
-                first_layer_outputs = encoder_outputs[0][:, :seq_len, :]
-                last_layer_outputs = encoder_outputs[-1][:, :seq_len, :]
-                average = (first_layer_outputs + last_layer_outputs) / 2.0
-                sentence_embedding.append(tf.reduce_mean(average, axis=1))
+        # if isinstance(sequence_length, int):
+        first_layer_outputs = encoder_outputs[0][:, :sequence_length, :]
+        last_layer_outputs = encoder_outputs[-1][:, :sequence_length, :]
+        average = (first_layer_outputs + last_layer_outputs) / 2.0
+        sentence_embedding = tf.reduce_mean(average, axis=1)
+        # else:
+        #     sentence_embedding = []
+        #     for i in range(self.config['batch_size']):
+        #         first_layer_outputs = encoder_outputs[0][:, :sequence_length[i], :]
+        #         last_layer_outputs = encoder_outputs[-1][:, :sequence_length[i], :]
+        #         average = (first_layer_outputs + last_layer_outputs) / 2.0
+        #         sentence_embedding.append(tf.reduce_mean(average, axis=1))
         _pooler_layer = tf.keras.layers.Dense(
             units=self.config['pooled_output_size'],
             activation='tanh',

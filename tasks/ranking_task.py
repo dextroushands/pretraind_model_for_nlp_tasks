@@ -1,8 +1,6 @@
 from official.nlp.bert import tokenization
 import tensorflow as tf
-from official.nlp.configs import bert
-from official.nlp.configs import encoders
-from official.nlp.data import pretrain_dataloader
+
 
 from official.nlp.tasks.tagging import TaggingTask
 from trainer.train_base import TrainBase

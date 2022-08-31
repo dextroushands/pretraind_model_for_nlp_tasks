@@ -21,6 +21,8 @@ from official.core import task_factory
 from typing import List, Optional, Tuple
 
 from models.sentence_embedding import SentenceEmbedding
+import requests
+import numpy as np
 
 @dataclasses.dataclass
 class ModelConfig(base_config.Config):
@@ -54,7 +56,7 @@ class EmbeddingTask(object):
     def __init__(self, config):
         self.config = config
 
-    def build_model(self, seq_len):
+    def build_model(self):
         '''
         构建模型
         '''
@@ -77,7 +79,7 @@ class EmbeddingTask(object):
                 stddev=cfg.initializer_range),
             embedding_width=cfg.embedding_size,
             return_all_encoder_outputs=True)
-        model = SentenceEmbedding(bert_encoder, seq_len, self.config)
+        model = SentenceEmbedding(bert_encoder, self.config)
         ckpt = tf.train.Checkpoint(model=bert_encoder)
         init_checkpoint = self.config['bert_model_path']
 
@@ -91,15 +93,19 @@ class EmbeddingTask(object):
         '''
         tokenize = tokenizer(self.config)
 
-        batch_token_ids, batch_segment_ids, batch_mask = [], [], []
+        batch_token_ids, batch_segment_ids, batch_mask, batch_seq_len = [], [], [], []
         word_ids, segment_ids, word_mask, seq_len = tokenize.encode(text)
+        word_ids = np.array(word_ids, dtype="float32").tolist()
+        segment_ids = np.array(segment_ids, dtype="float32").tolist()
+        word_mask = np.array(word_mask, dtype="float32").tolist()
         batch_token_ids.append(word_ids)
         batch_segment_ids.append(segment_ids)
         batch_mask.append(word_mask)
+        batch_seq_len.append(seq_len)
         inputs = dict(
-            input_word_ids=batch_token_ids,
-            input_mask=batch_mask,
-            input_type_ids=batch_segment_ids,
+            input_word_ids=word_ids,
+            input_mask=word_mask,
+            input_type_ids=segment_ids,
         )
 
         infer_input = {
@@ -107,16 +113,24 @@ class EmbeddingTask(object):
             "input_mask": tf.convert_to_tensor(inputs['input_mask']),
             "input_type_ids": tf.convert_to_tensor(inputs['input_type_ids']),
         }
-        return infer_input, seq_len
+
+        return inputs, infer_input, tf.reshape(tf.convert_to_tensor(batch_seq_len), shape=(-1,))
 
 
     def inference_one(self, text):
         '''
         推理一条数据
         '''
-        infer_inputs, seq_len = self.build_inputs(text)
-        model = self.build_model(seq_len)
-        outputs = model(infer_inputs)
+        inputs, infer_inputs, seq_len = self.build_inputs(text)
+        # model = self.build_model()
+        # outputs = model(infer_inputs)
+        data = json.dumps({"signature_name": "serving_default", "inputs":inputs['input_word_ids'],
+                           })
+        headers = {"content-type": "application/json"}
+        json_response = requests.post('http://localhost:8501/v1/models/my_model:predict',
+                                      data=data, headers=headers)
+        outputs = json.loads(json_response.text)
+        print(outputs)
         return outputs
 
 if __name__=='__main__':

@@ -198,6 +198,7 @@ if __name__=='__main__':
     init_checkpoint = config['bert_model_path']
     ckpt.restore(init_checkpoint).assert_existing_objects_matched()
     # config = models.get_config()
-    Itr_pair.train(model)
+    # Itr_pair.train(model)
+    print(model.layers)
 
 
